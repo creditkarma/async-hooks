@@ -33,7 +33,7 @@ export function patchPromise(hooks: IHooks, state: IState) {
     const oldThen = Promise.prototype.then
     Promise.prototype.then = wrappedThen
 
-    function makeWrappedHandler(fn: any, handle: any, uid: number, isOnFulfilled: boolean) {
+    function makeWrappedHandler(fn: any, uid: number, isOnFulfilled: boolean) {
         if ('function' !== typeof fn) {
             return isOnFulfilled
                 ? makeUnhandledResolutionHandler(uid)
@@ -41,26 +41,26 @@ export function patchPromise(hooks: IHooks, state: IState) {
         }
 
         return function wrappedHandler<T>(this: Promise<T>) {
-            hooks.pre.call(handle, uid)
+            hooks.pre(uid)
             try {
                 return fn.apply(this, arguments)
             } finally {
-                hooks.post.call(handle, uid, false)
-                hooks.destroy.call(null, uid)
+                hooks.post(uid, false)
+                hooks.destroy(uid)
             }
         }
     }
 
     function makeUnhandledResolutionHandler(uid: number) {
         return function unhandledResolutionHandler(val: any) {
-            hooks.destroy.call(null, uid)
+            hooks.destroy(uid)
             return val
         }
     }
 
     function makeUnhandledRejectionHandler(uid: number) {
         return function unhandledRejectedHandler(val: any) {
-            hooks.destroy.call(null, uid)
+            hooks.destroy(uid)
             throw val
         }
     }
@@ -73,12 +73,12 @@ export function patchPromise(hooks: IHooks, state: IState) {
         const handle = new PromiseWrap()
         const uid = state.nextId += 1
 
-        hooks.init.call(handle, uid, 0, state.currentId, null)
+        hooks.init(uid, 0, state.currentId, handle)
 
         return oldThen.call(
             this,
-            makeWrappedHandler(onFulfilled, handle, uid, true),
-            makeWrappedHandler(onRejected, handle, uid, false),
+            makeWrappedHandler(onFulfilled, uid, true),
+            makeWrappedHandler(onRejected, uid, false),
         )
     }
 }

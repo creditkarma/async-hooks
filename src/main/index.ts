@@ -23,20 +23,6 @@ if ((global as any)._asyncHook !== undefined) {
     instance = require('async_hooks')
 
 } else {
-    // const stackChain: any = require('stack-chain')
-
-    // // Remove callSites from this module. AsyncWrap doesn't have any callSites
-    // // and the hooks are expected to be completely transparent.
-    // stackChain.filter.attach((error: any, frames: any) => {
-    //     console.log('frames: ', frames)
-    //     return frames.filter((callSite: any) => {
-    //         const filename = callSite.getFileName()
-    //         // filename is not always a string, for example in case of eval it is
-    //         // undefined. So check if the filename is defined.
-    //         return !(filename && filename.slice(0, __dirname.length) === __dirname)
-    //     })
-    // })
-
     instance = require('./AsyncHooks');
 
     (global as any)._asyncHook = instance!

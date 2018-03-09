@@ -72,12 +72,12 @@ function patchTimer(
             throw new TypeError('"callback" argument must be a function')
         }
 
-        // const handle = new Handle()
+        const handle = new Handle()
         const uid = state.nextId += 1
         let timerId: number
 
         // call the init hook
-        hooks.init(uid, 0, state.currentId, null)
+        hooks.init(uid, 0, state.currentId, handle)
 
         // overwrite callback
         args[0] = function() {

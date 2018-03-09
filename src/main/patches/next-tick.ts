@@ -41,12 +41,12 @@ export function patchNextTick(hooks: IHooks, state: IState) {
         const uid = state.nextId += 1
 
         // call the init hook
-        hooks.init.call(handle, uid, 0, state.currentId, null)
+        hooks.init.call(handle, uid, 0, state.currentId, handle)
 
         // overwrite callback
         args[0] = function() {
             // call the pre hook
-            hooks.pre.call(handle, uid)
+            hooks.pre(uid)
 
             let didThrow = true
             try {
@@ -58,15 +58,15 @@ export function patchNextTick(hooks: IHooks, state: IState) {
                 // user handlers have been invoked.
                 if (didThrow && process.listenerCount('uncaughtException') > 0) {
                     process.once('uncaughtException', () => {
-                        hooks.post.call(handle, uid, true)
-                        hooks.destroy.call(null, uid)
+                        hooks.post(uid, true)
+                        hooks.destroy(uid)
                     })
                 }
             }
 
             // callback done successfully
-            hooks.post.call(handle, uid, false)
-            hooks.destroy.call(null, uid)
+            hooks.post(uid, false)
+            hooks.destroy(uid)
         }
 
         return oldNextTick.apply(process, args)

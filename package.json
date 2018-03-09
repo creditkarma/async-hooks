@@ -40,8 +40,5 @@
     "tslint": "^5.6.0",
     "tslint-eslint-rules": "^4.1.1",
     "typescript": "2.7.x"
-  },
-  "dependencies": {
-    "stack-chain": "^2.0.0"
   }
 }

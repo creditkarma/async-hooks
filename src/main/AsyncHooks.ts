@@ -40,6 +40,14 @@ export function executionAsyncId(): number {
     return state.currentId
 }
 
+export function currentId(): number {
+    return executionAsyncId()
+}
+
 export function triggerAsyncId(): number {
     return state.parentId
+}
+
+export function triggerId(): number {
+    return triggerAsyncId()
 }
