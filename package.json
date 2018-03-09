@@ -21,7 +21,11 @@
     "build": "npm run lint && tsc",
     "watch": "tsc --watch",
     "pretest": "npm run build",
-    "test": "lab --timeout 15000 --verbose -l -S -P spec lib/tests"
+    "test": "lab --timeout 15000 --verbose -l -S -P spec lib/tests",
+    "release:patch": "npm version patch && npm run release:publish",
+    "release:minor": "npm version minor && npm run release:publish",
+    "release:major": "npm version major && npm run release:publish",
+    "release:publish": "git push --follow-tags"
   },
   "author": "Credit Karma",
   "license": "Apache-2.0",
