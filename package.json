@@ -1,0 +1,47 @@
+{
+  "name": "@creditkarma/async-hooks",
+  "version": "0.0.0",
+  "description": "An Async Hooks polyfill for Node less than 8, written in TypeScript.",
+  "main": "lib/main/index.js",
+  "types": "lib/main/index.d.ts",
+  "files": [
+    "lib/main",
+    "NOTICE"
+  ],
+  "keywords": [
+    "async",
+    "typescript",
+    "async hooks",
+    "async wrap"
+  ],
+  "scripts": {
+    "clean": "rimraf ./lib",
+    "lint": "tslint --fix './src/**/*.ts'",
+    "prebuild": "npm run clean",
+    "build": "npm run lint && tsc",
+    "watch": "tsc --watch",
+    "pretest": "npm run build",
+    "test": "lab --timeout 15000 --verbose -l -S -P spec lib/tests"
+  },
+  "author": "Credit Karma",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/creditkarma/async-hooks"
+  },
+  "devDependencies": {
+    "@types/code": "^4.0.3",
+    "@types/lab": "^11.1.0",
+    "@types/node": "^8.0.31",
+    "@types/rimraf": "0.0.28",
+    "code": "^4.1.0",
+    "lab": "^14.2.0",
+    "rimraf": "^2.5.4",
+    "tslint": "^5.6.0",
+    "tslint-eslint-rules": "^4.1.1",
+    "typescript": "2.7.x"
+  },
+  "dependencies": {
+    "stack-chain": "^2.0.0"
+  }
+}
