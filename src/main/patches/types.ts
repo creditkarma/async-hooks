@@ -1,4 +1,4 @@
 import { IHooks } from '../Hooks'
-import { IState } from '../types'
+import { State } from '../State'
 
-export type Patch = (hooks: IHooks, state: IState) => void
+export type Patch = (hooks: IHooks, state: State) => void

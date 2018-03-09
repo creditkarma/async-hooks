@@ -19,11 +19,11 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 import { IHooks } from '../Hooks'
-import { IState } from '../types'
+import { State } from '../State'
 
 class PromiseWrap {}
 
-export function patchPromise(hooks: IHooks, state: IState) {
+export function patchPromise(hooks: IHooks, state: State) {
     const Promise = global.Promise
 
     /* As per ECMAScript 2015, .catch must be implemented by calling .then, as
@@ -33,34 +33,34 @@ export function patchPromise(hooks: IHooks, state: IState) {
     const oldThen = Promise.prototype.then
     Promise.prototype.then = wrappedThen
 
-    function makeWrappedHandler(fn: any, uid: number, isOnFulfilled: boolean) {
+    function makeWrappedHandler(fn: any, asyncId: number, isOnFulfilled: boolean) {
         if ('function' !== typeof fn) {
             return isOnFulfilled
-                ? makeUnhandledResolutionHandler(uid)
-                : makeUnhandledRejectionHandler(uid)
+                ? makeUnhandledResolutionHandler(asyncId)
+                : makeUnhandledRejectionHandler(asyncId)
         }
 
         return function wrappedHandler<T>(this: Promise<T>) {
-            hooks.pre(uid)
+            hooks.pre(asyncId)
             try {
                 return fn.apply(this, arguments)
             } finally {
-                hooks.post(uid, false)
-                hooks.destroy(uid)
+                hooks.post(asyncId, false)
+                hooks.destroy(asyncId)
             }
         }
     }
 
-    function makeUnhandledResolutionHandler(uid: number) {
+    function makeUnhandledResolutionHandler(asyncId: number) {
         return function unhandledResolutionHandler(val: any) {
-            hooks.destroy(uid)
+            hooks.destroy(asyncId)
             return val
         }
     }
 
-    function makeUnhandledRejectionHandler(uid: number) {
+    function makeUnhandledRejectionHandler(asyncId: number) {
         return function unhandledRejectedHandler(val: any) {
-            hooks.destroy(uid)
+            hooks.destroy(asyncId)
             throw val
         }
     }
@@ -71,14 +71,14 @@ export function patchPromise(hooks: IHooks, state: IState) {
         }
 
         const handle = new PromiseWrap()
-        const uid = state.nextId += 1
+        const asyncId = state.getNextId()
 
-        hooks.init(uid, 0, state.currentId, handle)
+        hooks.init(asyncId, 0, state.currentId, handle)
 
         return oldThen.call(
             this,
-            makeWrappedHandler(onFulfilled, uid, true),
-            makeWrappedHandler(onRejected, uid, false),
+            makeWrappedHandler(onFulfilled, asyncId, true),
+            makeWrappedHandler(onRejected, asyncId, false),
         )
     }
 }

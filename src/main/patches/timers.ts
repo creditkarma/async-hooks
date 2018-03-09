@@ -20,7 +20,7 @@
  */
 import * as timers from 'timers'
 import { IHooks } from '../Hooks'
-import { IState } from '../types'
+import { State } from '../State'
 
 function TimeoutWrap() {}
 function IntervalWrap() {}
@@ -33,7 +33,7 @@ const ImmediateMap = new Map()
 let activeCallback: any = null
 let clearedInCallback: boolean = false
 
-export function patchTimers(hooks: IHooks, state: IState) {
+export function patchTimers(hooks: IHooks, state: State) {
   patchTimer(hooks, state, 'setTimeout', 'clearTimeout', TimeoutWrap, timeoutMap, true)
   patchTimer(hooks, state, 'setInterval', 'clearInterval', IntervalWrap, intervalMap, false)
   patchTimer(hooks, state, 'setImmediate', 'clearImmediate', ImmediateWrap, ImmediateMap, true)
@@ -49,7 +49,7 @@ export function patchTimers(hooks: IHooks, state: IState) {
 
 function patchTimer(
     hooks: IHooks,
-    state: IState,
+    state: State,
     setFn: string,
     clearFn: string,
     Handle: any,
@@ -73,17 +73,17 @@ function patchTimer(
         }
 
         const handle = new Handle()
-        const uid = state.nextId += 1
+        const asyncId = state.getNextId()
         let timerId: number
 
         // call the init hook
-        hooks.init(uid, 0, state.currentId, handle)
+        hooks.init(asyncId, 0, state.currentId, handle)
 
         // overwrite callback
         args[0] = function() {
             // call the pre hook
             activeCallback = timerId
-            hooks.pre(uid)
+            hooks.pre(asyncId)
 
             let didThrow = true
             try {
@@ -96,30 +96,30 @@ function patchTimer(
                 if (didThrow && process.listenerCount('uncaughtException') > 0) {
                     process.once('uncaughtException', () => {
                         // call the post hook
-                        hooks.post(uid, true)
+                        hooks.post(asyncId, true)
                         // setInterval won't continue
                         timerMap.delete(timerId)
-                        hooks.destroy(uid)
+                        hooks.destroy(asyncId)
                     })
                 }
             }
 
             // callback done successfully
-            hooks.post(uid, false)
+            hooks.post(asyncId, false)
             activeCallback = null
 
             // call the destroy hook if the callback will only be called once
             if (singleCall || clearedInCallback) {
                 clearedInCallback = false
                 timerMap.delete(timerId)
-                hooks.destroy(uid)
+                hooks.destroy(asyncId)
             }
         }
 
         timerId = oldSetFn.apply(timers, args)
-        // Bind the timerId and uid for later use, in case the clear* function is
+        // Bind the timerId and asyncId for later use, in case the clear* function is
         // called.
-        timerMap.set(timerId, uid)
+        timerMap.set(timerId, asyncId)
 
         return timerId
     };
@@ -131,9 +131,9 @@ function patchTimer(
         if (activeCallback === timerId && timerId !== null) {
             clearedInCallback = true
         } else if (timerMap.has(timerId)) {
-            const uid = timerMap.get(timerId)
+            const asyncId = timerMap.get(timerId)
             timerMap.delete(timerId)
-            hooks.destroy(uid)
+            hooks.destroy(asyncId)
         }
 
         oldClearFn.apply(timers, arguments)

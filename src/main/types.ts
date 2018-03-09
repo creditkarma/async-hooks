@@ -69,12 +69,3 @@ export interface IAsyncHook {
      */
     disable(): this
 }
-
-export interface IState {
-    enabled: boolean
-    previousIds: Array<number>
-    nextId: number
-    currentId: number
-    parentId: number
-    idMap: Map<number, number>
-}

@@ -19,11 +19,11 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 import { IHooks } from '../Hooks'
-import { IState } from '../types'
+import { State } from '../State'
 
 class NextTickWrap {}
 
-export function patchNextTick(hooks: IHooks, state: IState) {
+export function patchNextTick(hooks: IHooks, state: State) {
     const oldNextTick = process.nextTick
     process.nextTick = function tick() {
         if (!state.enabled) {
@@ -38,15 +38,15 @@ export function patchNextTick(hooks: IHooks, state: IState) {
         }
 
         const handle = new NextTickWrap()
-        const uid = state.nextId += 1
+        const asyncId = state.getNextId()
 
         // call the init hook
-        hooks.init.call(handle, uid, 0, state.currentId, handle)
+        hooks.init(asyncId, 'NextTick', state.currentId, handle)
 
         // overwrite callback
         args[0] = function() {
             // call the pre hook
-            hooks.pre(uid)
+            hooks.pre(asyncId)
 
             let didThrow = true
             try {
@@ -58,15 +58,15 @@ export function patchNextTick(hooks: IHooks, state: IState) {
                 // user handlers have been invoked.
                 if (didThrow && process.listenerCount('uncaughtException') > 0) {
                     process.once('uncaughtException', () => {
-                        hooks.post(uid, true)
-                        hooks.destroy(uid)
+                        hooks.post(asyncId, true)
+                        hooks.destroy(asyncId)
                     })
                 }
             }
 
             // callback done successfully
-            hooks.post(uid, false)
-            hooks.destroy(uid)
+            hooks.post(asyncId, false)
+            hooks.destroy(asyncId)
         }
 
         return oldNextTick.apply(process, args)

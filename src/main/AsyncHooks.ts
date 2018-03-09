@@ -1,17 +1,11 @@
 import { AsyncHook } from './AsyncHook'
 import { createHooks, IHooks } from './Hooks'
 import { patches } from './patches'
-import { IAsyncHook, IHookCallbacks, IState } from './types'
+import { State } from './State'
+import { IAsyncHook, IHookCallbacks } from './types'
 const asyncWrap: any = (process as any).binding('async_wrap')
 
-const state: IState = {
-    enabled: true,
-    previousIds: [],
-    nextId: 0,
-    currentId: 0,
-    parentId: 0,
-    idMap: new Map(),
-}
+const state: State = new State()
 
 const hooks: IHooks = createHooks(state)
 
@@ -21,11 +15,67 @@ for (const key of Object.keys(patches)) {
     patches[key](hooks, state)
 }
 
+const TIMERWRAP: number = asyncWrap.Providers.TIMERWRAP
+const ignoreUIDs: Set<number> = new Set()
+const idMap: Map<number, number> = new Map()
+
 asyncWrap.setupHooks({
-    init: hooks.init,
-    pre: hooks.pre,
-    post: hooks.post,
-    destroy: hooks.destroy,
+    init(uid: number, provider: any, parentUid: number, parentHandle: any): void {
+        // Ignore TIMERWRAP, since setTimeout etc. is monkey patched
+        if (provider === TIMERWRAP) {
+            ignoreUIDs.add(uid)
+            return
+        }
+
+        const asyncId = state.getNextId()
+        const parentId = state.currentId
+        idMap.set(uid, asyncId)
+
+        // debug(`init: id: ${thisId}`)
+        // debug(`init: parent: ${state.currentId}`)
+        // debug(`init: provider: `, provider)
+        // debug(`init: handle: `, parentHandle)
+
+        hooks.init(asyncId, provider, parentId, parentHandle)
+    },
+    pre(uid: number): void {
+        if (ignoreUIDs.has(uid)) {
+            return
+        }
+
+        const asyncId: number | undefined = idMap.get(uid)
+        if (asyncId !== undefined) {
+            hooks.pre(asyncId)
+        }
+    },
+    post(uid: number, didThrow: boolean) {
+        if (ignoreUIDs.has(uid)) {
+            return
+        }
+
+        const asyncId: number | undefined = idMap.get(uid)
+        if (asyncId !== undefined) {
+            hooks.post(asyncId, didThrow)
+        }
+    },
+    destroy(uid: number) {
+        // Cleanup the ignore list if this uid should be ignored
+        if (ignoreUIDs.has(uid)) {
+            ignoreUIDs.delete(uid)
+            return
+        }
+
+        if (idMap.has(uid)) {
+            const asyncId = idMap.get(uid)
+            if (asyncId !== undefined) {
+                idMap.delete(uid)
+
+                // debug(`destroy: id: ${thisId}`)
+
+                hooks.destroy(asyncId)
+            }
+        }
+    },
 })
 
 asyncWrap.enable()
