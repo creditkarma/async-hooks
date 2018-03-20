@@ -4,8 +4,6 @@ import {
     IHookCallbacks,
 } from './types'
 
-import { packageExists } from './utils'
-
 let instance: AsyncHooks
 
 // If a another copy (same version or not) of stack-chain exists it will result
@@ -18,9 +16,6 @@ if ((global as any)._asyncHook !== undefined) {
     } else {
         throw new Error('Conflicting version of async-hook found')
     }
-
-} else if (packageExists('async_hooks')) {
-    instance = require('async_hooks')
 
 } else {
     instance = require('./AsyncHooks');

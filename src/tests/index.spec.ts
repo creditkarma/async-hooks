@@ -1,6 +1,5 @@
 import { expect } from 'code'
 import * as Lab from 'lab'
-// import * as net from 'net'
 
 import {
     createHook,
@@ -20,36 +19,57 @@ const it = lab.it
 describe('Async Hooks', () => {
 
     it('should call relevant callbacks for lifecycle events', (done) => {
-        let initCalled = 0
-        let beforeCalled = 0
-        let afterCalled = 0
+        let initCalled = false
+        let beforeCalled = false
+        let afterCalled = false
         let called = false
+        const callIds = new Set<number>()
+        const resources = new Map<number, object>()
 
         const callbacks: IHookCallbacks = {
-            init() {
-                // debug('init: ', arguments)
-                initCalled += 1
+            init(asyncId: number, type: string, triggerId: number, resource: object) {
+                initCalled = true
+                resources.set(asyncId, resource)
+                // debug(`init: type[${type}]: called[${initCalled}]: id[${asyncId}] -> parent[${triggerId}]`)
             },
-            before() {
-                // debug('before: ', arguments)
-                beforeCalled += 1
+            before(asyncId: number) {
+                // debug(`before[${asyncId}]: `, resources.get(asyncId))
+                callIds.add(asyncId)
+                beforeCalled = true
             },
-            after() {
-                // debug('after: ', arguments)
-                afterCalled += 1
+            after(asyncId: number) {
+                // debug(`after[${asyncId}]: `, resources.get(asyncId))
+                callIds.delete(asyncId)
+                afterCalled = true
             },
         }
 
-        createHook(callbacks).enable()
+        const hook = createHook(callbacks)
+        hook.enable()
+
+        process.nextTick(() => {
+            setTimeout(() => {
+                // debug('timeout: ', executionAsyncId())
+                // debug('timeout: ', callIds)
+                expect(callIds.has(executionAsyncId())).to.equal(true)
+                called = true
+            }, 50)
+
+            const interval = setInterval(() => {
+                // debug('interval: ', executionAsyncId())
+                // debug('interval: ', callIds)
+                expect(callIds.has(executionAsyncId())).to.equal(true)
+                clearInterval(interval)
+            }, 50)
+        })
 
         setTimeout(() => {
-            called = true
-        }, 50)
-
-        setTimeout(() => {
-            expect(initCalled).to.equal(2)
-            expect(beforeCalled).to.equal(2)
-            expect(afterCalled).to.equal(1)
+            hook.disable()
+            // expect(callIds.size).to.equal(1)
+            expect(callIds.has(executionAsyncId())).to.equal(true)
+            expect(initCalled).to.equal(true)
+            expect(beforeCalled).to.equal(true)
+            expect(afterCalled).to.equal(true)
             expect(called).to.equal(true)
             done()
         }, 100)
