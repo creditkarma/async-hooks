@@ -19,8 +19,8 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 import * as timers from 'timers'
-import { IHooks } from '../Hooks'
-import { State } from '../State'
+import { IHooks } from '../../Hooks'
+import { State } from '../../State'
 
 function TimeoutWrap() {}
 function IntervalWrap() {}
@@ -116,7 +116,7 @@ function patchTimer(
             }
         }
 
-        timerId = oldSetFn.apply(timers, args)
+        timerId = oldSetFn(...args)
         // Bind the timerId and asyncId for later use, in case the clear* function is
         // called.
         timerMap.set(timerId, asyncId)
@@ -136,6 +136,6 @@ function patchTimer(
             hooks.destroy(asyncId)
         }
 
-        oldClearFn.apply(timers, arguments)
+        oldClearFn(timerId)
     }
 }
