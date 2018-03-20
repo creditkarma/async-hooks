@@ -73,44 +73,38 @@ export function startAsyncWrap(hooks: IHooks, state: State): void {
             // Ignore TIMERWRAP, since setTimeout etc. is monkey patched
             if (provider === TIMERWRAP) {
                 ignoreUIDs.add(uid)
-                return
+
+            } else {
+                const asyncId = state.getNextId()
+                const parentId = state.currentId
+                const type = providerToString(provider)
+                idMap.set(uid, asyncId)
+
+                hooks.init(asyncId, type, parentId, parentHandle)
             }
-
-            const asyncId = state.getNextId()
-            const parentId = state.currentId
-            const type = providerToString(provider)
-            idMap.set(uid, asyncId)
-
-            hooks.init(asyncId, type, parentId, parentHandle)
         },
         pre(uid: number): void {
-            if (ignoreUIDs.has(uid)) {
-                return
-            }
-
-            const asyncId: number | undefined = idMap.get(uid)
-            if (asyncId !== undefined) {
-                hooks.pre(asyncId)
+            if (!ignoreUIDs.has(uid)) {
+                const asyncId: number | undefined = idMap.get(uid)
+                if (asyncId !== undefined) {
+                    hooks.pre(asyncId)
+                }
             }
         },
         post(uid: number, didThrow: boolean) {
-            if (ignoreUIDs.has(uid)) {
-                return
-            }
-
-            const asyncId: number | undefined = idMap.get(uid)
-            if (asyncId !== undefined) {
-                hooks.post(asyncId, didThrow)
+            if (!ignoreUIDs.has(uid)) {
+                const asyncId: number | undefined = idMap.get(uid)
+                if (asyncId !== undefined) {
+                    hooks.post(asyncId, didThrow)
+                }
             }
         },
         destroy(uid: number) {
             // Cleanup the ignore list if this uid should be ignored
             if (ignoreUIDs.has(uid)) {
                 ignoreUIDs.delete(uid)
-                return
-            }
 
-            if (idMap.has(uid)) {
+            } else if (idMap.has(uid)) {
                 const asyncId = idMap.get(uid)
                 if (asyncId !== undefined) {
                     idMap.delete(uid)

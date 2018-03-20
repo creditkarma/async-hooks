@@ -20,43 +20,37 @@ export function startAsyncHooks(hooks: IHooks, state: State): void {
             // Ignore PROMSIE, since Promise is monkey patched
             if (type === 'PROMISE') {
                 ignoreUIDs.add(uid)
-                return
+
+            } else {
+                const asyncId = state.getNextId()
+                const parentId = state.currentId
+                idMap.set(uid, asyncId)
+
+                hooks.init(asyncId, type, parentId, resource)
             }
-
-            const asyncId = state.getNextId()
-            const parentId = state.currentId
-            idMap.set(uid, asyncId)
-
-            hooks.init(asyncId, type, parentId, resource)
         },
         before(uid: number): void {
-            if (ignoreUIDs.has(uid)) {
-                return
-            }
-
-            const asyncId: number | undefined = idMap.get(uid)
-            if (asyncId !== undefined) {
-                hooks.pre(asyncId)
+            if (!ignoreUIDs.has(uid)) {
+                const asyncId: number | undefined = idMap.get(uid)
+                if (asyncId !== undefined) {
+                    hooks.pre(asyncId)
+                }
             }
         },
         after(uid: number) {
-            if (ignoreUIDs.has(uid)) {
-                return
-            }
-
-            const asyncId: number | undefined = idMap.get(uid)
-            if (asyncId !== undefined) {
-                hooks.post(asyncId, false)
+            if (!ignoreUIDs.has(uid)) {
+                const asyncId: number | undefined = idMap.get(uid)
+                if (asyncId !== undefined) {
+                    hooks.post(asyncId, false)
+                }
             }
         },
         destroy(uid: number) {
             // Cleanup the ignore list if this uid should be ignored
             if (ignoreUIDs.has(uid)) {
                 ignoreUIDs.delete(uid)
-                return
-            }
 
-            if (idMap.has(uid)) {
+            } else if (idMap.has(uid)) {
                 const asyncId = idMap.get(uid)
                 if (asyncId !== undefined) {
                     idMap.delete(uid)
