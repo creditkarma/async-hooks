@@ -3,6 +3,7 @@ export class State {
         public enabled: boolean = true,
         public previousIds: Array<number> = [],
         public previousParents: Array<number> = [],
+        public childToParent: Map<number, number> = new Map(),
         public nextId: number = 0,
         public currentId: number = 0,
         public parentId: number = 0,

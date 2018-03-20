@@ -16,14 +16,13 @@ export interface IHooks {
 
 export function createHooks(state: State): IHooks  {
     let hooks: Array<AsyncHook> = []
-    const childToParent: Map<number, number> = new Map()
 
     return {
         init(asyncId: number, provider: any, parentId: number, parentHandle: any): void {
             // call hooks
             // debug('init: asyncId: ', asyncId)
             // debug('init: parentId: ', parentId)
-            childToParent.set(asyncId, parentId)
+            state.childToParent.set(asyncId, parentId)
             for (const hook of hooks) {
                 hook.init(asyncId, provider, parentId, parentHandle)
             }
@@ -34,7 +33,7 @@ export function createHooks(state: State): IHooks  {
             state.previousIds.push(state.currentId)
             state.previousParents.push(state.parentId)
             state.currentId = asyncId
-            state.parentId = childToParent.get(asyncId) || 0
+            state.parentId = state.childToParent.get(asyncId) || 0
 
             // call hooks
             for (const hook of hooks) {
@@ -54,6 +53,7 @@ export function createHooks(state: State): IHooks  {
         },
 
         destroy(asyncId: number) {
+            state.childToParent.delete(asyncId)
             for (const hook of hooks) {
                 hook.destroy(asyncId)
             }
