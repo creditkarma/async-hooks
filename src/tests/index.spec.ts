@@ -71,4 +71,50 @@ describe('Async Hooks', () => {
             })
         }, 200)
     })
+
+    it('should handle context in setTimeout', (done) => {
+        function runAnother(id: number) {
+            setTimeout(() => {
+                expect(triggerAsyncId()).to.equal(id)
+                done()
+            }, 100)
+        }
+
+        const parent_1 = executionAsyncId()
+        setTimeout(() => {
+            const parent_2 = executionAsyncId()
+            expect(triggerAsyncId()).to.equal(parent_1)
+            setTimeout(() => {
+                const parent_3 = executionAsyncId()
+                expect(triggerAsyncId()).to.equal(parent_2)
+                setTimeout(() => {
+                    expect(triggerAsyncId()).to.equal(parent_3)
+                    runAnother(executionAsyncId())
+                }, 200)
+            }, 500)
+        }, 200)
+    })
+
+    it('should handle context in nextTick', (done) => {
+        function runAnother(id: number) {
+            process.nextTick(() => {
+                expect(triggerAsyncId()).to.equal(id)
+                done()
+            })
+        }
+
+        const parent_1 = executionAsyncId()
+        process.nextTick(() => {
+            const parent_2 = executionAsyncId()
+            expect(triggerAsyncId()).to.equal(parent_1)
+            process.nextTick(() => {
+                const parent_3 = executionAsyncId()
+                expect(triggerAsyncId()).to.equal(parent_2)
+                process.nextTick(() => {
+                    expect(triggerAsyncId()).to.equal(parent_3)
+                    runAnother(executionAsyncId())
+                })
+            })
+        })
+    })
 })
