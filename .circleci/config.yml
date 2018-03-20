@@ -18,6 +18,8 @@ jobs:
 
   test_node_8:
     <<: *defaults
+    docker:
+      - image: circleci/node:8.9.4
     steps:
       - checkout
       - run:
