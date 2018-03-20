@@ -31,7 +31,6 @@ export function createHooks(state: State): IHooks  {
         pre(asyncId: number): void {
             // debug('pre: asyncId: ', asyncId)
             state.previousIds.push(state.currentId)
-            state.previousParents.push(state.parentId)
             state.currentId = asyncId
             state.parentId = state.childToParent.get(asyncId) || 0
 
@@ -43,7 +42,7 @@ export function createHooks(state: State): IHooks  {
 
         post(asyncId: number, didThrow: boolean) {
             state.currentId = state.previousIds.pop() || 0
-            state.parentId = state.previousParents.pop() || 0
+            state.parentId = state.childToParent.get(state.currentId) || 0
             // debug(`post: asyncId: ${asyncId}`)
 
             // call hooks
