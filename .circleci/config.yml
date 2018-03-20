@@ -68,14 +68,14 @@ workflows:
   build_publish:
       jobs:
         - test_node_6:
-          filters:
-            tags:
-              only: /.*/
+            filters:
+              tags:
+                only: /.*/
 
-      - test_node_8:
-          filters:
-            tags:
-              only: /.*/
+        - test_node_8:
+            filters:
+              tags:
+                only: /.*/
 
         - publish:
             requires:
