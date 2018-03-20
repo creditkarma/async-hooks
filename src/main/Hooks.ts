@@ -1,5 +1,5 @@
-// import { debug } from './debug'
 import { State } from './State'
+// import { debug } from './debug'
 
 import {
     AsyncHook,
@@ -16,18 +16,25 @@ export interface IHooks {
 
 export function createHooks(state: State): IHooks  {
     let hooks: Array<AsyncHook> = []
+    const childToParent: Map<number, number> = new Map()
 
     return {
         init(asyncId: number, provider: any, parentId: number, parentHandle: any): void {
             // call hooks
+            // debug('init: asyncId: ', asyncId)
+            // debug('init: parentId: ', parentId)
+            childToParent.set(asyncId, parentId)
             for (const hook of hooks) {
                 hook.init(asyncId, provider, parentId, parentHandle)
             }
         },
 
         pre(asyncId: number): void {
+            // debug('pre: asyncId: ', asyncId)
             state.previousIds.push(state.currentId)
+            state.previousParents.push(state.parentId)
             state.currentId = asyncId
+            state.parentId = childToParent.get(asyncId) || 0
 
             // call hooks
             for (const hook of hooks) {
@@ -37,7 +44,8 @@ export function createHooks(state: State): IHooks  {
 
         post(asyncId: number, didThrow: boolean) {
             state.currentId = state.previousIds.pop() || 0
-            // debug(`post: id: ${thisId}`)
+            state.parentId = state.previousParents.pop() || 0
+            // debug(`post: asyncId: ${asyncId}`)
 
             // call hooks
             for (const hook of hooks) {

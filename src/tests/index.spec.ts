@@ -5,8 +5,9 @@ import * as Lab from 'lab'
 import {
     createHook,
     // debug,
-    // executionAsyncId,
+    executionAsyncId,
     IHookCallbacks,
+    triggerAsyncId,
 } from '../main'
 
 export const lab = Lab.script()
@@ -18,7 +19,7 @@ const it = lab.it
 
 describe('Async Hooks', () => {
 
-    it('should do things', (done) => {
+    it('should call relevant callbacks for lifecycle events', (done) => {
         let initCalled = 0
         let beforeCalled = 0
         let afterCalled = 0
@@ -52,5 +53,22 @@ describe('Async Hooks', () => {
             expect(called).to.equal(true)
             done()
         }, 100)
+    })
+
+    it('should handle context in promises', (done) => {
+        const parent_1 = executionAsyncId()
+        setTimeout(() => {
+            const parent_2 = executionAsyncId()
+            expect(triggerAsyncId()).to.equal(parent_1)
+            new Promise((resolve, reject) => {
+                setTimeout(() => {
+                    expect(triggerAsyncId()).to.equal(parent_2)
+                    resolve(6)
+                }, 500)
+            }).then((val) => {
+                expect(triggerAsyncId()).to.equal(parent_2)
+                done()
+            })
+        }, 200)
     })
 })
