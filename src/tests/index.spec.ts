@@ -92,6 +92,35 @@ describe('Async Hooks', () => {
         }, 200)
     })
 
+    it('should handle context in async/await', async () => {
+        const parent_1 = executionAsyncId()
+        console.log('parent_1: ', parent_1)
+
+        async function delay<T>(fn: () => T, time: number) {
+            return new Promise((resolve, reject) => {
+                setTimeout(() => {
+                    resolve(fn())
+                }, delay)
+            })
+        }
+
+        await delay(async () => {
+            const parent_2 = executionAsyncId()
+            console.log('parent_2: ', parent_2)
+            expect(triggerAsyncId()).to.equal(parent_1)
+            const value_1 = await delay(() => {
+                expect(triggerAsyncId()).to.equal(parent_2)
+                return 6
+            }, 500).then((val) => {
+                const parent_3 = executionAsyncId()
+                console.log('parent_3: ', parent_3)
+                expect(triggerAsyncId()).to.equal(parent_2)
+            })
+
+            return value_1
+        }, 200)
+    })
+
     it('should handle context in setTimeout', (done) => {
         function runAnother(id: number) {
             setTimeout(() => {
