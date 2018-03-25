@@ -1,0 +1,21 @@
+{
+  "compilerOptions": {
+    "lib": [ "dom", "es6", "dom.iterable", "scripthost" ],
+    "target": "es2018",
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "sourceMap": true,
+    "declaration": true,
+    "rootDir": "./src",
+    "outDir": "./lib",
+    "noEmitOnError": true,
+    "strict": true,
+    "noUnusedLocals": true,
+    "pretty": true,
+    "removeComments": true
+  },
+  "exclude": [
+    "node_modules",
+    "dist"
+  ]
+}

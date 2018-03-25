@@ -27,7 +27,7 @@ jobs:
           command: npm install
       - run:
           name: Run Test Suite
-          command: npm test
+          command: npm run test:node_8
 
   publish:
     <<: *defaults
