@@ -16,6 +16,7 @@
   ],
   "scripts": {
     "clean": "rimraf ./lib",
+    "clean-all": "rimraf lib/ node_modules/ package-lock.json",
     "lint": "tslint --fix './src/**/*.ts'",
     "prebuild": "npm run clean",
     "build": "npm run lint && tsc",
@@ -34,10 +35,12 @@
     "url": "https://github.com/creditkarma/async-hooks"
   },
   "devDependencies": {
+    "@types/bluebird": "^3.5.20",
     "@types/code": "^4.0.3",
     "@types/lab": "^11.1.0",
     "@types/node": "^8.0.31",
     "@types/rimraf": "0.0.28",
+    "bluebird": "^3.5.1",
     "code": "^4.1.0",
     "lab": "^14.2.0",
     "rimraf": "^2.5.4",

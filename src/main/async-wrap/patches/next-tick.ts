@@ -25,50 +25,62 @@ class NextTickWrap {}
 
 export function patchNextTick(hooks: IHooks, state: State) {
     const oldNextTick = process.nextTick
-    process.nextTick = function tick() {
+
+    function patchedTick() {
         if (!state.enabled) {
-            return oldNextTick.apply(process, arguments)
-        }
+            return Function.prototype.apply.call(oldNextTick, process, arguments)
 
-        const args = Array.from(arguments)
-        const callback = args[0]
+        } else {
+            const args = Array.from(arguments)
+            const callback = args[0]
 
-        if (typeof callback !== 'function') {
-            throw new TypeError('callback is not a function')
-        }
-
-        const handle = new NextTickWrap()
-        const asyncId = state.getNextId()
-
-        // call the init hook
-        hooks.init(asyncId, 'NextTick', state.currentId, handle)
-
-        // overwrite callback
-        args[0] = function() {
-            // call the pre hook
-            hooks.pre(asyncId)
-
-            let didThrow = true
-            try {
-                callback.apply(this, arguments)
-                didThrow = false
-            } finally {
-                // If `callback` threw and there is an uncaughtException handler
-                // then call the `post` and `destroy` hook after the uncaughtException
-                // user handlers have been invoked.
-                if (didThrow && process.listenerCount('uncaughtException') > 0) {
-                    process.once('uncaughtException', () => {
-                        hooks.post(asyncId, true)
-                        hooks.destroy(asyncId)
-                    })
-                }
+            if (typeof callback !== 'function') {
+                throw new TypeError('callback is not a function')
             }
 
-            // callback done successfully
-            hooks.post(asyncId, false)
-            hooks.destroy(asyncId)
-        }
+            const handle = new NextTickWrap()
+            const asyncId = state.getNextId()
 
-        return oldNextTick.apply(process, args)
+            // call the init hook
+            hooks.init(asyncId, 'NextTick', state.currentId, handle)
+
+            // overwrite callback
+            args[0] = function() {
+                // call the pre hook
+                hooks.pre(asyncId)
+
+                let didThrow = true
+                try {
+                    callback.apply(this, arguments)
+                    didThrow = false
+                } finally {
+                    // If `callback` threw and there is an uncaughtException handler
+                    // then call the `post` and `destroy` hook after the uncaughtException
+                    // user handlers have been invoked.
+                    if (didThrow && process.listenerCount('uncaughtException') > 0) {
+                        process.once('uncaughtException', () => {
+                            hooks.post(asyncId, true)
+                            hooks.destroy(asyncId)
+                        })
+                    }
+                }
+
+                // callback done successfully
+                hooks.post(asyncId, false)
+                hooks.destroy(asyncId)
+            }
+
+            return Function.prototype.apply.call(oldNextTick, process, args)
+        }
     }
+
+    oldNextTick.call = function(thisArg, ...args) {
+        return Function.prototype.call(patchedTick, thisArg, ...args)
+    }
+
+    oldNextTick.apply = function(thisArg, args) {
+        return Function.prototype.apply(patchedTick, [ thisArg, ...args ])
+    }
+
+    process.nextTick = patchedTick
 }

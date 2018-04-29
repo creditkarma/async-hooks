@@ -1,5 +1,5 @@
-import { State } from './State'
 // import { debug } from './debug'
+import { State } from './State'
 
 import {
     AsyncHook,

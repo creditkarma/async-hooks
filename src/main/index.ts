@@ -20,7 +20,7 @@ if ((global as any)._asyncHook !== undefined) {
 } else {
     instance = require('./AsyncHooks');
 
-    (global as any)._asyncHook = instance!
+    (global as any)._asyncHook = instance
 }
 
 export * from './debug'

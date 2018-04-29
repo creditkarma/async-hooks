@@ -57,79 +57,91 @@ function patchTimer(
     singleCall: boolean,
 ): void {
     const oldSetFn = (timers as any)[setFn]
-    const oldClearFn = (timers as any)[clearFn];
+    const oldClearFn = (timers as any)[clearFn]
 
     // overwrite set[Timeout]
-    (timers as any)[setFn] = function() {
+    function patchedSetFunction() {
         if (!state.enabled) {
-            return oldSetFn.apply(timers, arguments)
-        }
+            return Function.prototype.call.apply(oldSetFn, [ timers, ...arguments ])
 
-        const args = Array.from(arguments)
-        const callback = args[0]
+        } else {
+            const args = Array.from(arguments)
+            const callback = args[0]
 
-        if (typeof callback !== 'function') {
-            throw new TypeError('"callback" argument must be a function')
-        }
+            if (typeof callback !== 'function') {
+                throw new TypeError('"callback" argument must be a function')
+            }
 
-        const handle = new Handle()
-        const asyncId = state.getNextId()
-        let timerId: number
+            const handle = new Handle()
+            const asyncId = state.getNextId()
+            let timerId: number
 
-        // call the init hook
-        hooks.init(asyncId, 0, state.currentId, handle)
+            // call the init hook
+            hooks.init(asyncId, 0, state.currentId, handle)
 
-        // overwrite callback
-        args[0] = function() {
-            // call the pre hook
-            activeCallback = timerId
-            hooks.pre(asyncId)
+            // overwrite callback
+            args[0] = function() {
+                // call the pre hook
+                activeCallback = timerId
+                hooks.pre(asyncId)
 
-            let didThrow = true
-            try {
-                callback.apply(this, arguments)
-                didThrow = false
-            } finally {
-                // If `callback` threw and there is an uncaughtException handler
-                // then call the `post` and `destroy` hook after the uncaughtException
-                // user handlers have been invoked.
-                if (didThrow && process.listenerCount('uncaughtException') > 0) {
-                    process.once('uncaughtException', () => {
-                        // call the post hook
-                        hooks.post(asyncId, true)
-                        // setInterval won't continue
-                        timerMap.delete(timerId)
-                        hooks.destroy(asyncId)
-                    })
+                let didThrow = true
+                try {
+                    callback.apply(this, arguments)
+                    didThrow = false
+                } finally {
+                    // If `callback` threw and there is an uncaughtException handler
+                    // then call the `post` and `destroy` hook after the uncaughtException
+                    // user handlers have been invoked.
+                    if (didThrow && process.listenerCount('uncaughtException') > 0) {
+                        process.once('uncaughtException', () => {
+                            // call the post hook
+                            hooks.post(asyncId, true)
+                            // setInterval won't continue
+                            timerMap.delete(timerId)
+                            hooks.destroy(asyncId)
+                        })
+                    }
+                }
+
+                // callback done successfully
+                hooks.post(asyncId, false)
+                activeCallback = null
+
+                // call the destroy hook if the callback will only be called once
+                if (singleCall || clearedInCallback) {
+                    clearedInCallback = false
+                    timerMap.delete(timerId)
+                    hooks.destroy(asyncId)
                 }
             }
 
-            // callback done successfully
-            hooks.post(asyncId, false)
-            activeCallback = null
+            timerId = oldSetFn(...args)
+            // Bind the timerId and asyncId for later use, in case the clear* function is
+            // called.
+            timerMap.set(timerId, asyncId)
 
-            // call the destroy hook if the callback will only be called once
-            if (singleCall || clearedInCallback) {
-                clearedInCallback = false
-                timerMap.delete(timerId)
-                hooks.destroy(asyncId)
-            }
+            return timerId
         }
+    }
 
-        timerId = oldSetFn(...args)
-        // Bind the timerId and asyncId for later use, in case the clear* function is
-        // called.
-        timerMap.set(timerId, asyncId)
+    oldSetFn.call = function(thisArg: any, ...args: Array<any>): void {
+        return Function.prototype.call.apply(patchedSetFunction, [ thisArg, ...args ])
+    }
 
-        return timerId
+    oldSetFn.apply = function(thisArg: any, args: Array<any>): void {
+        return Function.prototype.call.apply(patchedSetFunction, [ thisArg, args ])
     };
 
+    (timers as any)[setFn] = patchedSetFunction
+
     // overwrite clear[Timeout]
-    (timers as any)[clearFn] = (timerId: number) => {
+    function patchedClearFunction(timerId: number): void {
         // If clear* was called within the timer callback, then delay the destroy
         // event to after the post event has been called.
         if (activeCallback === timerId && timerId !== null) {
             clearedInCallback = true
+
         } else if (timerMap.has(timerId)) {
             const asyncId = timerMap.get(timerId)
             timerMap.delete(timerId)
@@ -138,4 +150,14 @@ function patchTimer(
 
         oldClearFn(timerId)
     }
+
+    oldClearFn.call = function(thisArg: any, ...args: Array<any>): void {
+        return Function.prototype.call.apply(patchedClearFunction, [ thisArg, ...args ])
+    }
+
+    oldClearFn.apply = function(thisArg: any, args: Array<any>): void {
+        return Function.prototype.call.apply(patchedClearFunction, [ thisArg, args ])
+    };
+
+    (timers as any)[clearFn] = patchedClearFunction
 }
