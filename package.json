@@ -1,6 +1,6 @@
 {
   "name": "@creditkarma/async-hooks",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "description": "An Async Hooks polyfill for Node less than 8, written in TypeScript.",
   "main": "lib/main/index.js",
   "types": "lib/main/index.d.ts",
