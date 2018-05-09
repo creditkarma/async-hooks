@@ -1,4 +1,4 @@
-export interface AsyncHooks {
+export interface IAsyncHooks {
     createHook(options: IHookCallbacks): IAsyncHook
     executionAsyncId(): number
     currentId(): number

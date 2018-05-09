@@ -1,11 +1,11 @@
 // import { debug } from '../debug'
 import { IHooks } from '../Hooks'
 import { State } from '../State'
-import { AsyncHooks } from '../types'
+import { IAsyncHooks } from '../types'
 import { patches } from './patches'
 
 export function startAsyncHooks(hooks: IHooks, state: State): void {
-    const async_hooks: AsyncHooks = require('async_hooks')
+    const async_hooks: IAsyncHooks = require('async_hooks')
 
     for (const key of Object.keys(patches)) {
         patches[key](hooks, state)

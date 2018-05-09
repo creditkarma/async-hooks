@@ -1,7 +1,6 @@
 {
 	"extends": "tslint:recommended",
 	"rules": {
-        "interface-name": false,
         "variable-name": false,
         "only-arrow-functions": false,
         "max-classes-per-file": false,
