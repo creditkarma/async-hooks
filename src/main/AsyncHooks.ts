@@ -1,7 +1,6 @@
 import { startAsyncHooks } from './async-hooks'
 import { startAsyncWrap } from './async-wrap'
 import { AsyncHook } from './AsyncHook'
-// import { debug } from './debug'
 import { createHooks, IHooks } from './Hooks'
 import { State } from './State'
 import { IAsyncHook, IHookCallbacks } from './types'
