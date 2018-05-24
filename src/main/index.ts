@@ -4,8 +4,9 @@ import {
 } from './types'
 
 import * as asyncHooks from './AsyncHooks'
+import * as debug from './debug'
 
-export * from './debug'
+export { debug }
 export * from './types'
 
 export const createHook: (options: IHookCallbacks) => IAsyncHook = asyncHooks.createHook

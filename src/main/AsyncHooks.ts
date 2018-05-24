@@ -2,6 +2,7 @@ import { startAsyncHooks } from './async-hooks'
 import { startAsyncWrap } from './async-wrap'
 import { AsyncHook } from './AsyncHook'
 import { createHooks, IHooks } from './Hooks'
+import * as logger from './logger'
 import { State } from './State'
 import { IAsyncHook, IHookCallbacks } from './types'
 import { packageExists } from './utils'
@@ -30,7 +31,7 @@ export function executionAsyncId(): number {
 }
 
 export function currentId(): number {
-    console.warn('DeprecationWarning: async_hooks.currentId is deprecated. Use async_hooks.executionAsyncId instead')
+    logger.warn('DeprecationWarning: async_hooks.currentId is deprecated. Use async_hooks.executionAsyncId instead')
     return executionAsyncId()
 }
 
@@ -39,6 +40,6 @@ export function triggerAsyncId(): number {
 }
 
 export function triggerId(): number {
-    console.warn('DeprecationWarning: async_hooks.triggerId is deprecated. Use async_hooks.triggerAsyncId instead')
+    logger.warn('DeprecationWarning: async_hooks.triggerId is deprecated. Use async_hooks.triggerAsyncId instead')
     return triggerAsyncId()
 }
