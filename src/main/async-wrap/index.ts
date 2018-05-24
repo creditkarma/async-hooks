@@ -1,4 +1,5 @@
 import { IHooks } from '../Hooks'
+import * as logger from '../logger'
 import { State } from '../State'
 import { patches } from './patches'
 
@@ -70,47 +71,63 @@ export function startAsyncWrap(hooks: IHooks, state: State): void {
 
     asyncWrap.setupHooks({
         init(uid: number, provider: number, parentUid: number, parentHandle: any): void {
-            // Ignore TIMERWRAP, since setTimeout etc. is monkey patched
-            if (provider === TIMERWRAP) {
-                ignoreUIDs.add(uid)
+            try {
+                // Ignore TIMERWRAP, since setTimeout etc. is monkey patched
+                if (provider === TIMERWRAP) {
+                    ignoreUIDs.add(uid)
 
-            } else {
-                const asyncId = state.getNextId()
-                const parentId = state.currentId
-                const type = providerToString(provider)
-                idMap.set(uid, asyncId)
+                } else {
+                    const asyncId = state.getNextId()
+                    const parentId = state.currentId
+                    const type = providerToString(provider)
+                    idMap.set(uid, asyncId)
 
-                hooks.init(asyncId, type, parentId, parentHandle)
+                    hooks.init(asyncId, type, parentId, parentHandle)
+                }
+            } catch (err) {
+                logger.error('[async_wrap]: init: ', err)
             }
         },
         pre(uid: number): void {
-            if (!ignoreUIDs.has(uid)) {
-                const asyncId: number | undefined = idMap.get(uid)
-                if (asyncId !== undefined) {
-                    hooks.pre(asyncId)
+            try {
+                if (!ignoreUIDs.has(uid)) {
+                    const asyncId: number | undefined = idMap.get(uid)
+                    if (asyncId !== undefined) {
+                        hooks.pre(asyncId)
+                    }
                 }
+            } catch (err) {
+                logger.error('[async_wrap]: pre: ', err)
             }
         },
         post(uid: number, didThrow: boolean) {
-            if (!ignoreUIDs.has(uid)) {
-                const asyncId: number | undefined = idMap.get(uid)
-                if (asyncId !== undefined) {
-                    hooks.post(asyncId, didThrow)
+            try {
+                if (!ignoreUIDs.has(uid)) {
+                    const asyncId: number | undefined = idMap.get(uid)
+                    if (asyncId !== undefined) {
+                        hooks.post(asyncId, didThrow)
+                    }
                 }
+            } catch (err) {
+                logger.error('[async_wrap]: post: ', err)
             }
         },
         destroy(uid: number) {
-            // Cleanup the ignore list if this uid should be ignored
-            if (ignoreUIDs.has(uid)) {
-                ignoreUIDs.delete(uid)
+            try {
+                // Cleanup the ignore list if this uid should be ignored
+                if (ignoreUIDs.has(uid)) {
+                    ignoreUIDs.delete(uid)
 
-            } else if (idMap.has(uid)) {
-                const asyncId = idMap.get(uid)
-                if (asyncId !== undefined) {
-                    idMap.delete(uid)
+                } else if (idMap.has(uid)) {
+                    const asyncId = idMap.get(uid)
+                    if (asyncId !== undefined) {
+                        idMap.delete(uid)
 
-                    hooks.destroy(asyncId)
+                        hooks.destroy(asyncId)
+                    }
                 }
+            } catch (err) {
+                logger.error('[async_wrap]: destroy: ', err)
             }
         },
     })
